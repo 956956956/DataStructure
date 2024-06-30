@@ -1,136 +1,107 @@
-//2023031703 김서현 0327 자구응 실습 1.c 제출
+//2023031703 김서현 0429 자구응 실습 1.c 제출
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
 #include <stdlib.h>
-#define MAX_STACK_SIZE 100
-#define MAX_EXPR_SIZE 100
 
-typedef enum{lparen, rparen,
-	plus, minus, times, divide, mod,
-	eos, operand}precedence;
+typedef struct node* treePointer;
+typedef struct node {
+	int data;
+	treePointer lChild, rChild;
+};
+treePointer head;
 
-static int isp[] = { 0,19,12,12,13,13,13,0 };
-static int icp[] = { 20,19,12,12,13,13,13,0 };
-
-int num = 0;
-//expr이 [0], [1], [2] 이렇게 한줄씩 있기땜에 한줄한줄을 나타내주는 num을 사용해줍니더
-
-//operator를 저장하는 stack
-precedence stack[MAX_STACK_SIZE]; int top = 0;
-
-//스트링을 저장하는 문자 배열 (infix를 여기에 저장할겁니당)
-char expr[MAX_EXPR_SIZE][MAX_EXPR_SIZE];
-
-//날라온 심볼은 스트링 저장하는 배열에 저장을 해줍니당 n은 인덱스구요
-//get_token함수는 연산자이면 각각에 맞는 연산을 반환해주고 연산자가 아니라면 operand(피연산자)임을 반환해줍니다
-precedence get_token(char* symbol, int* n) {
-	*symbol = expr[num][(*n)++];
-	switch (*symbol) {
-	case '(': return lparen;
-	case ')': return rparen;
-	case '+': return plus;
-	case '-': return minus;
-	case '*': return times;
-	case '/': return divide;
-	case '%': return mod;
-	case '\0' : return eos;
-	default: return operand;
-	}
-
-}
-
-
-void print_token(precedence token) {
-	switch (token) {
-	case plus: printf("+"); break;
-	case minus: printf("-"); break;
-	case times: printf("*"); break;
-	case divide: printf("/"); break;
-	case mod: printf("%%"); break;
-	default: break;
-	}
-}
-
-int pop() {
-	if (top > 0) return stack[top--];
-	else return eos;
-}
-
-void push(precedence token) {
-	// 맨 처음 push할 때 top=0이기 때문에 전위 연산을 하고 저장을 해줍니다
-	stack[++top] = token;
-}
-
-//num은 expr의 [0]인지 [1]인지 나타내주는 인덱스입니당
-void postfix(void) {
-	int n = 0;
-	char symbol=expr[num][n];
-	stack[0] = eos;
-	//어차피 symbol은 get_token함수에서 위치가 알아서 바뀝니다... n을 굳이 신경쓰지는 맙시당
-	int i = 0;
-	precedence token;
-		for (token = get_token(&symbol, &n); token != eos; token = get_token(&symbol, &n)) {
-			if (token == operand) printf("%c", symbol);
-			// token을 get 해왓는데 피연산자라면 바로바로 출력을 해줍니다.
-			else if (token == rparen) {
-				// rapren이 있는데 top 스택이 lparen이 아니라면 오류입니당.
-				// 오른쪽 괄호가 왼쪽 괄호보다 많은 경우이죠
-				while (stack[top] != lparen) {
-					if (top == 0) {
-						printf("\n괄호 오류");
-						break;
-					}
-					//그게 아니라면 그냥 팝 해줍니다
-					print_token(pop());
-				}
-				// 오른쪽 괄호가 더 많은 오류일때 for문을 완전 탈출해조야 하기 때문에 if문과 break를 한 번 더 걸어줍니다
-				if (token == rparen && top == 0) break;
-				//아니묜 그냥 pop 하면 댑니다
-				pop();
-			}
-			// 받아온 토큰이 연산자일 경우입니다
-			else {
-				while (isp[stack[top]] >= icp[token]) {
-					print_token(pop());
-				}
-				push(token);
-			}
-		}
-		//for 문이 끝난 후 (다 읽고 난 뒤 stack에 남아있는 친구들을 다 꺼내줍니다
-		while ((token = pop()) != eos) {
-			//만약 스택 안에 lparen이 남아있다면 왼쪽 괄호가 오른쪽 괄호보다 많은 경우입니다
-			if (token == lparen) {
-				printf("\n괄호 오류");
-				//이미 for문을 다 돌았을테니 여기서 break는 한 번만 걸어주면 됩니당
-				break;
-			}
-			// 팝한 토큰을 출력해줍시당
-			print_token(token);
-		}
-		
-	}
-
-
+//왼쪽 자식 생성과 오른쪽 자식 생성을 따로따로 만들어줄겁니당..
+void CreateLeftNode(treePointer ptr, int data);
+void CreateRightNode(treePointer ptr, int data);
+void inorder(treePointer ptr);
+void postorder(treePointer ptr);
+void preorder(treePointer ptr);
 
 int main() {
-	
-	FILE* fp = fopen("infix.txt", "r");
-	if (fp == NULL) printf("파일 열기 실패");
-	int i= 0;
-	//expr에 한줄한줄을 각각 저장해줍시당
-	while (fgets(expr[i], MAX_EXPR_SIZE, fp) != NULL) {
-		expr[i][strlen(expr[i]) - 1] = '\0';
-		i++;
+	int data = 1;
+	int temp;
+	head = malloc(sizeof(struct node));
+	do{
+		printf("input data : ");
+		scanf("%d", &data);
+		head->data = data;
+		head->lChild = head->rChild = NULL;
+		int ldata = temp * 3, rdata = temp * 4;
+		if (data == 0) {
+			printf("0인 데이터로 인한 무한반복은 너굴맨이 처리했으니 안심하라구!\n");
+			continue;
+		}
+		if (data < 0) {
+			printf("종료\n");
+			break;
+		}
+		CreateLeftNode(head, data * 3);
+		CreateRightNode(head, data * 4);
+		printf("Inorder : ");
+		inorder(head);
+		printf("\n");
+		printf("Postorder : ");
+		postorder(head);
+		printf("\n");
+		printf("Preorder : ");
+		preorder(head);
+		printf("\n");
 		
-	}
-	
+	} while (data >= 0);
+	free(head);
 
-	for (int j = 0; j < i; j++) {
-		printf("Infix : %s\n", expr[j]);
-		printf("Postfix : ");
-		postfix();
-		printf("\n\n");
-		num++;
+}
+
+//call by value로 포인터의 값을 직접 수정하지는 않습니다...
+void CreateLeftNode(treePointer ptr, int data) {
+	if (data > 100) return;
+	if (!ptr->lChild) {
+		treePointer temp = malloc(sizeof(struct node));
+		temp->data = data;
+		temp->lChild = temp->rChild = NULL;
+		ptr->lChild = temp;
+		//재귀처럼 사용해줍니당
+		CreateLeftNode(temp, data * 3);  
+		CreateRightNode(temp, data * 4); 
+	}
+}
+
+void CreateRightNode(treePointer ptr, int data) {
+	if (data > 100) return;
+	//오른쪽 자식이 만들어져 있지 않다면 생성을 해줍니당
+	if (!ptr->rChild) {
+		treePointer temp = malloc(sizeof(struct node));
+		temp->data = data;
+		temp->lChild = temp->rChild = NULL;
+		ptr->rChild = temp;
+		CreateLeftNode(temp, data * 3);   // 재귀적으로 왼쪽 자식을 추가
+		CreateRightNode(temp, data * 4);  // 재귀적으로 오른쪽 자식을 추가
+	}
+}
+
+
+
+void inorder(treePointer ptr) {
+	if (ptr) {
+		inorder(ptr->lChild);
+		printf("%d ", ptr->data);
+		inorder(ptr->rChild);
+	}
+}
+
+void postorder(treePointer ptr) {
+	if (ptr) {
+		postorder(ptr->lChild);
+		postorder(ptr->rChild);
+		printf("%d ", ptr->data);
+	}
+}
+
+void preorder(treePointer ptr) {
+	if (ptr) {
+		printf("%d ", ptr->data);
+		preorder(ptr->lChild);
+		preorder(ptr->rChild);
 	}
 }
