@@ -1,36 +1,67 @@
-//2023031703 김서현 자료구조응용 2.c
+//2023031703 김서현 0529 자구응 실습 2.c 제출
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
 #include <stdlib.h>
 
-int main() {
-	//파일을 열어줍니다
-	FILE* fp1 = fopen("in1.txt", "r");
-	FILE* fp2 = fopen("in2.txt", "r");
+typedef struct PERSON {
+    char name[10];
+    int score;
+}PERSON;
 
-	int n1, n2;
-	//맨 처음 값을 지정해줍니다
-	fscanf(fp1, "%d", &n1);
-	fscanf(fp2, "%d", &n2);
-	//fp1과 fp2가 파일의 끝에 도달할 때 까지 무한반복 돌려줍니다
-	while (!feof(fp1) && !feof(fp2)) {
-		if (n1 > n2) {
-			//n1>n2라면 fp1만 다음 값을 받아줍니다
-			fscanf(fp1, "%d", &n1);
-		}
-		if (n1 < n2) {
-			//n2>n1이라면 fp2만 다음 값을 받아줍니다
-			fscanf(fp2, "%d", &n2);
-		}
-		if (n1 == n2) {
-			//같은 값이라면 출력하고 두 파일 다 다음 값을 받아줍니다
-			printf("%d ", n1);
-			fscanf(fp1, "%d", &n1);
-			fscanf(fp2, "%d", &n2);
-		}
-	}
-	//파일을 닫아줍니다
-	fclose(fp1);
-	fclose(fp2);
+int listMerge(PERSON a[], int link[], int start1, int start2);
+int rmergeSort(PERSON a[], int link[], int left, int right);
+
+PERSON* a;
+
+int main() {
+    FILE* fp = fopen("in.txt", "r");
+    int num = 0; fscanf(fp, "%d\n", &num);
+    a = malloc(sizeof(PERSON) * (num+1));
+    for (int i = 1; i <= num; i++) {
+        fscanf(fp, "%s %d\n", a[i].name, &a[i].score);
+    }
+
+    //링크를 포인터로 받고 동적할당하고 초깃값을 지정 안 해주니까 오류나서 초깃값을 지정해줍니당...(이유는 모르겟음)
+    int* link = malloc(sizeof(int) * (num + 1));
+    for (int i = 1; i <= num; i++) {
+        link[i] = 0;
+    }
+
+    int start = rmergeSort(a, link, 1, num);
+    
+    //결과 출력
+    printf("[Recursive merge sort]\n");
+    for (int i=0; i<num; i++) {
+        printf("%5s %5d\n", a[start].name, a[start].score);
+        start = link[start];
+    }
+
+    fclose(fp);
+    free(a);
+    free(link);
+}
+
+int listMerge(PERSON a[], int link[], int start1, int start2) {
+    int last1, last2, lastResult = 0;
+    for (last1 = start1, last2 = start2; last1 && last2;) {
+        //나머지는 강의자료와 동일하고, 부등호 방향만 바꿔줬습니다
+        if (a[last1].score >= a[last2].score) {
+            link[lastResult] = last1;
+            lastResult = last1; last1 = link[last1];
+        }
+        else {
+            link[lastResult] = last2;
+            lastResult = last2; last2 = link[last2];
+        }
+    }
+    if (last1 == 0) link[lastResult] = last2;
+    else link[lastResult] = last1;
+    return link[0];
+}
+
+int rmergeSort(PERSON a[], int link[], int left, int right) {
+    if (left >= right) return left;
+    int mid = (left + right) / 2;
+    return listMerge(a, link, rmergeSort(a, link, left, mid), rmergeSort(a, link, mid + 1, right));
 }
